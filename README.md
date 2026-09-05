@@ -1,137 +1,154 @@
-﻿# CleanMatch - API de Servicios y Reservas
+﻿# Ahora Somos 3 - API de Servicios y Reservas
 
 Sistema Backend de Turnos y Reservas. API REST construida con **Node.js + Express**, persistencia en **MongoDB Atlas** con Mongoose y arquitectura en capas.
 
-> **Entrega Final** — CRUD completo de servicios y reservas, relaciones con populate, filtros, paginación, ordenamiento, validaciones con Zod, vistas con Handlebars y comunicación en tiempo real con Socket.io.
+> **API completa** — CRUD de servicios y reservas, relaciones con populate, filtros, paginación, ordenamiento, validaciones con Zod, vistas con Handlebars y comunicación en tiempo real con Socket.io.
 
 ## Requisitos
 
 - Node.js v18 o superior
 - npm
+- MongoDB Atlas (opcional — funciona sin él con algunas limitaciones)
 
 ## Instalación
 
 ```bash
-git clone <url-del-repositorio>
-cd <carpeta>
+git clone https://github.com/francolobo1709/ahorasomos3-back.git
+cd ahorasomos3-back
 npm install
 ```
 
 ## Variables de entorno
 
-Copiá el archivo `.env.example` como `.env` y completá los valores:
+Copia el archivo `.env.example` como `.env` y completa los valores:
 
 ```bash
 cp .env.example .env
 ```
 
-| Variable    | Descripción                       | Requerida | Ejemplo                         |
-|-------------|-----------------------------------|-----------|---------------------------------|
-| `PORT`      | Puerto del servidor               | ✅        | `8080`                          |
-| `NODE_ENV`  | Entorno de ejecución              | ✅        | `development`                   |
-| `MONGO_URI` | URI de conexión a MongoDB Atlas   | ✅ | `mongodb+srv://...` |
+| Variable    | Descripción                      | Requerida | Ejemplo                 |
+|-------------|----------------------------------|-----------|-------------------------|
+| `PORT`      | Puerto del servidor              | ✅        | `8080`                  |
+| `NODE_ENV`  | Entorno de ejecución             | ✅        | `development`           |
+| `MONGO_URI` | URI de conexión a MongoDB Atlas  | ⚠️        | `mongodb+srv://...`     |
+
+> Si `MONGO_URI` no está configurada, los endpoints de mensajes (`/api/messages`) retornarán `503`.
 
 ## Ejecución
 
 ```bash
-npm start      # producción
-npm run dev    # desarrollo con watch
+npm start      # Producción
+npm run dev    # Desarrollo con watch (recomendado)
 ```
 
-Salida esperada (sin MongoDB):
-
-```
-🚀 CleanMatch corriendo en modo: development
-📡 Servidor escuchando en http://localhost:8080
-⚠️  MongoDB no disponible. /api/messages no funcionará.
-```
-
-Salida esperada (con MongoDB):
-
+**Salida esperada con MongoDB conectado:**
 ```
 ✅ MongoDB conectado correctamente.
-🚀 CleanMatch corriendo en modo: development
-📡 Servidor escuchando en http://localhost:8080
+🚀 Servidor corriendo en modo: development
+📡 Escuchando en http://localhost:8080
+```
+
+**Salida esperada sin MongoDB:**
+```
+⚠️  MongoDB no disponible. /api/messages retornará 503.
+🚀 Servidor corriendo en modo: development
+📡 Escuchando en http://localhost:8080
 ```
 
 ---
 
 ## Arquitectura en capas
 
-El proyecto implementa una arquitectura en capas donde cada una tiene una responsabilidad única.
+El proyecto implementa una arquitectura modular y desacoplada donde cada capa tiene una responsabilidad única.
 
 ### Estructura del proyecto
 
 ```
 src/
 ├── config/
-│   ├── env.config.js       → Variables de entorno (PORT, NODE_ENV, MONGO_URI)
-│   └── socket.js           → Configuración de Socket.io
+│   ├── env.config.js           Variables de entorno
+│   ├── mongodb.js              Configuración de MongoDB
+│   └── socket.js               Configuración de Socket.io
 ├── database/
-│   └── connection.js       → Conexión a MongoDB Atlas (todos los módulos)
+│   └── connection.js           Conexión centralizada a MongoDB
+├── models/
+│   ├── Service.model.js        Schema de servicios
+│   ├── Booking.model.js        Schema de reservas (ref: Service)
+│   └── message.model.js        Schema de mensajes (ref: Booking)
 ├── controllers/
 │   ├── services.controller.js
 │   ├── bookings.controller.js
 │   ├── messages.controller.js
 │   └── views.controller.js
 ├── services/
-│   ├── services.service.js
-│   ├── bookings.service.js
-│   └── message.service.js
+│   ├── services.service.js     Lógica de negocio de servicios
+│   ├── bookings.service.js     Lógica de negocio de reservas
+│   └── message.service.js      Lógica de negocio de mensajes
 ├── repositories/
-│   ├── services.repository.js
-│   ├── bookings.repository.js
-│   └── message.repository.js
+│   ├── services.repository.js  Acceso a datos de servicios
+│   ├── bookings.repository.js  Acceso a datos de reservas
+│   ├── message.repository.js   Acceso a datos de mensajes
+│   └── repository.utils.js     Utilidades compartidas
 ├── dao/
-│   ├── services.dao.js     → Opera contra MongoDB (ServiceModel)
-│   ├── bookings.dao.js     → Opera contra MongoDB (BookingModel)
-│   └── message.dao.js      → Opera contra MongoDB (MessageModel)
+│   ├── services.dao.js         DAO para servicios
+│   ├── bookings.dao.js         DAO para reservas
+│   └── message.dao.js          DAO para mensajes
 ├── routes/
 │   ├── services.router.js
 │   ├── bookings.router.js
 │   ├── messages.router.js
 │   └── views.router.js
-├── middlewares/
-│   ├── errorHandler.js     → Manejador centralizado de errores
-│   ├── validate.js         → Validación con Zod
-│   ├── parseId.js          → Validación de ID en params
-│   └── requireMongo.js     → Guard 503 si MongoDB no está disponible
 ├── validators/
-│   ├── service.validators.js
+│   ├── service.validators.js   Schemas de validación (Zod)
 │   └── booking.validators.js
-├── models/
-│   ├── Service.model.js    → Mongoose schema para servicios
-│   ├── Booking.model.js    → Mongoose schema para reservas (ref a Service)
-│   └── message.model.js    → Mongoose schema para mensajes (ref a Booking)
-└── errors/
-    └── AppError.js         → AppError, ValidationError, NotFoundError
+├── middlewares/
+│   ├── errorHandler.js         Manejador centralizado de errores
+│   ├── validate.js             Middleware de validación (Zod)
+│   ├── parseId.js              Validación de IDs en params
+│   └── requireMongo.js         Guard: 503 si MongoDB no disponible
+├── errors/
+│   └── AppError.js             Clases de error tipadas
+├── views/
+│   ├── layouts/
+│   │   └── main.handlebars
+│   ├── services.handlebars
+│   └── availability.handlebars
+├── public/
+│   ├── css/styles.css
+│   └── js/socket.js
+├── app.js                      Configuración de Express
+└── server.js                   Punto de entrada
 ```
 
 ### Flujo de una petición
 
 ```
-Request
-  └─→ Router          → define el endpoint, aplica middlewares
-        └─→ validate  → Zod (400 si falla)
-              └─→ Controller   → lee req, llama service, responde con res
-                    └─→ Service      → reglas de negocio (sin req/res)
-                          └─→ Repository   → acceso a datos, sin lógica
-                                └─→ DAO         → accede a MongoDB vía Mongoose
+HTTP Request
+    ↓
+Router (define el endpoint)
+    ↓
+Middlewares (validación con Zod, parseId, etc.)
+    ↓
+Controller (lee req, llama al service, responde con res)
+    ↓
+Service (reglas de negocio — sin conocer req/res)
+    ↓
+Repository (acceso a datos — sin lógica de negocio)
+    ↓
+DAO (accede directamente a MongoDB vía Mongoose)
+    ↓
+HTTP Response
 ```
 
 ### Responsabilidades por capa
 
-| Capa           | Responsabilidad                                                                 |
-|----------------|---------------------------------------------------------------------------------|
-| **Router**     | Define endpoints y aplica middlewares de validación. Sin lógica de negocio.    |
-| **Controller** | Lee `req`, llama al service y responde con `res`. Sin lógica de negocio.       |
-| **Service**    | Concentra las reglas de negocio. No conoce `req`, `res` ni la fuente de datos. |
-| **Repository** | Ofrece métodos de acceso a datos, valida IDs y lanza errores tipados.          |
-| **DAO**        | Única capa que accede directamente a MongoDB vía Mongoose.                     |
-
-### Regla de negocio clave — bookings
-
-Al agregar un servicio a una reserva (`POST /api/bookings/:bid/services/:sid`), si el mismo servicio ya existe se **incrementa `quantity`** en vez de duplicarlo. Esta lógica vive exclusivamente en `bookings.service.js`.
+| Capa           | Responsabilidad                                                          |
+|----------------|--------------------------------------------------------------------------|
+| **Router**     | Define endpoints y aplica middlewares. Sin lógica de negocio.            |
+| **Controller** | Lee `req`, llama al service, responde con `res`. Sin lógica de negocio. |
+| **Service**    | Concentra la lógica de negocio. No conoce `req`, `res` ni BD.           |
+| **Repository** | Ofrece métodos de acceso a datos tipados. Valida y lanza errores.       |
+| **DAO**        | Única capa que accede directamente a MongoDB vía Mongoose.               |
 
 ---
 
@@ -139,15 +156,15 @@ Al agregar un servicio a una reserva (`POST /api/bookings/:bid/services/:sid`), 
 
 ### Services — `/api/services`
 
-| Método   | Ruta                  | Descripción                                          |
-|----------|-----------------------|------------------------------------------------------|
-| `GET`    | `/api/services`       | Listar servicios (filtros, paginación y ordenamiento)|
-| `GET`    | `/api/services/:sid`  | Obtener servicio por ID                              |
-| `POST`   | `/api/services`       | Crear un servicio                                    |
-| `PUT`    | `/api/services/:sid`  | Actualizar un servicio                               |
-| `DELETE` | `/api/services/:sid`  | Eliminar un servicio                                 |
+| Método   | Ruta                  | Descripción                                  |
+|----------|----------------------|----------------------------------------------|
+| `GET`    | `/api/services`      | Listar servicios (con filtros y paginación) |
+| `GET`    | `/api/services/:sid` | Obtener servicio por ID                     |
+| `POST`   | `/api/services`      | Crear un servicio                           |
+| `PUT`    | `/api/services/:sid` | Actualizar un servicio                      |
+| `DELETE` | `/api/services/:sid` | Eliminar un servicio                        |
 
-#### Filtros y paginación — `GET /api/services`
+#### Filtros, paginación y ordenamiento — `GET /api/services`
 
 | Query param | Tipo    | Default      | Ejemplo               |
 |-------------|---------|-------------- |-----------------------|
@@ -161,8 +178,26 @@ Al agregar un servicio a una reserva (`POST /api/bookings/:bid/services/:sid`), 
 **Respuesta:**
 ```json
 {
-  "data": [{ "_id": "...", "name": "Limpieza", "price": 3500, "category": "limpieza", "available": true }],
-  "pagination": { "total": 12, "page": 1, "limit": 5, "totalPages": 3, "hasPrevPage": false, "hasNextPage": true }
+  "data": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Limpieza del hogar",
+      "description": "Limpieza completa",
+      "duration": 120,
+      "price": 5000,
+      "category": "limpieza",
+      "available": true,
+      "createdAt": "2026-07-15T10:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "total": 12,
+    "page": 1,
+    "limit": 5,
+    "totalPages": 3,
+    "hasPrevPage": false,
+    "hasNextPage": true
+  }
 }
 ```
 
@@ -171,206 +206,13 @@ Al agregar un servicio a una reserva (`POST /api/bookings/:bid/services/:sid`), 
 ```json
 {
   "name": "Limpieza del hogar",
-  "description": "Limpieza completa del hogar",
+  "description": "Limpieza completa y profunda",
   "duration": 120,
   "price": 5000,
   "category": "limpieza",
   "available": true
 }
 ```
-
----
-
-### Bookings — `/api/bookings`
-
-| Método   | Ruta                                | Descripción                               |
-|----------|-------------------------------------|-------------------------------------------|
-| `GET`    | `/api/bookings`                     | Listar todas las reservas                 |
-| `GET`    | `/api/bookings/:bid`                | Obtener reserva por ID                    |
-| `POST`   | `/api/bookings`                     | Crear una reserva                         |
-| `PUT`    | `/api/bookings/:bid`                | Actualizar una reserva                    |
-| `DELETE` | `/api/bookings/:bid`                | Eliminar una reserva                      |
-| `POST`   | `/api/bookings/:bid/services/:sid`  | Agregar servicio a la reserva             |
-
-#### Body `POST /api/bookings`
-
-```json
-{
-  "clientName": "Juan Pérez",
-  "clientEmail": "juan@mail.com",
-  "date": "2026-07-15T10:00:00"
-}
-```
-
-#### Body `POST /api/bookings/:bid/services/:sid`
-
-```json
-{ "quantity": 2 }
-```
-
-> `quantity` es opcional (default `1`). Si el servicio ya existe en la reserva, se incrementa su cantidad.
-
----
-
-### Messages — `/api/messages` *(requiere MongoDB)*
-
-| Método   | Ruta                         | Descripción                       |
-|----------|------------------------------|-----------------------------------|
-| `GET`    | `/api/messages`              | Listar todos los mensajes         |
-| `GET`    | `/api/messages/:mid`         | Obtener mensaje por ID            |
-| `GET`    | `/api/messages/booking/:bid` | Mensajes de una reserva           |
-| `POST`   | `/api/messages`              | Crear un mensaje                  |
-| `DELETE` | `/api/messages/:mid`         | Eliminar un mensaje               |
-
-> Si `MONGO_URI` no está configurada o la conexión falla, estos endpoints devuelven `503`.
-
----
-
-## Validaciones con Zod
-
-Las validaciones se aplican como middlewares en la capa de rutas antes de llegar al controller. Si los datos no son válidos, se devuelve `400`.
-
-```json
-{
-  "error": "Datos inválidos.",
-  "details": "price: price debe ser mayor a 0 | available: available debe ser true o false."
-}
-```
-
-## Requisitos
-
-- Node.js v18 o superior
-- npm
-
-## Instalación
-
-```bash
-git clone <url-del-repositorio>
-cd <carpeta>
-npm install
-```
-
-## Variables de entorno
-
-Copiá el archivo `.env.example` como `.env` y completá los valores:
-
-```bash
-cp .env.example .env
-```
-
-| Variable   | Descripción                      | Ejemplo              |
-|------------|----------------------------------|----------------------|
-| `PORT`     | Puerto del servidor              | `8080`               |
-| `NODE_ENV` | Entorno de ejecución             | `development`        |
-
-## Ejecución
-
-```bash
-npm start      # producción
-npm run dev    # desarrollo con watch
-```
-
-Salida esperada:
-
-```
-🚀 CleanMatch corriendo en modo: development
-📡 Servidor escuchando en http://localhost:8080
-```
-
----
-
-## Arquitectura en capas
-
-El proyecto implementa una arquitectura en capas donde cada una tiene una responsabilidad única y no conoce a las capas por encima de ella.
-
-```
-src/
-├── config/           → Variables de entorno, configuración de Socket.io
-├── controllers/      → Leen req, llaman al service, responden con res
-├── services/         → Reglas de negocio; no conocen req/res
-├── repositories/     → Acceso a datos sin reglas de negocio; delegan en el DAO
-├── dao/              → Leen y escriben directamente en los archivos JSON
-├── data/             → services.json, bookings.json (fuente de datos)
-├── routes/           → Definen endpoints y conectan con controllers
-├── middlewares/      → errorHandler, parseId, validate (Zod)
-├── validators/       → Schemas de Zod
-└── errors/           → AppError, ValidationError, NotFoundError
-```
-
-### Flujo de una petición
-
-```
-Request
-  └─→ Router          (define el endpoint)
-        └─→ validate  (Zod, middleware — 400 si falla)
-              └─→ Controller   (lee req, llama service, responde)
-                    └─→ Service      (reglas de negocio)
-                          └─→ Repository   (acceso a datos, sin lógica)
-                                └─→ DAO         (lee/escribe JSON)
-                                      └─→ data/*.json
-```
-
-### Responsabilidades por capa
-
-| Capa         | Responsabilidad |
-|--------------|----------------|
-| **Router**   | Define endpoints y conecta al controller; aplica middlewares de validación |
-| **Controller** | Lee `req`, llama al service, responde con `res`; no contiene lógica de negocio |
-| **Service**  | Contiene las reglas de negocio; no conoce `req` ni `res` ni la fuente de datos |
-| **Repository** | Ofrece métodos de acceso a datos desacoplados; valida IDs y lanza errores tipados |
-| **DAO**      | Única capa que lee/escribe en los archivos JSON; sin lógica de negocio |
-
-### Regla de negocio clave en bookings
-
-Al agregar un servicio a una reserva (`POST /api/bookings/:bid/services/:sid`), si el mismo servicio ya existe en la reserva se **incrementa su `quantity`** en vez de duplicarlo. Esta lógica vive exclusivamente en `booking.service.js`.
-
----
-
-## Endpoints
-
-### Services — `/api/services`
-
-| Método   | Ruta                  | Descripción                |
-|----------|-----------------------|----------------------------|
-| `GET`    | `/api/services`       | Listar servicios (filtros, paginación y orden) |
-| `GET`    | `/api/services/:sid`  | Obtener servicio por ID    |
-| `POST`   | `/api/services`       | Crear un servicio          |
-| `PUT`    | `/api/services/:sid`  | Actualizar un servicio     |
-| `DELETE` | `/api/services/:sid`  | Eliminar un servicio       |
-
-#### Filtros, paginación y ordenamiento — `GET /api/services`
-
-| Query param | Tipo    | Descripción                                          | Ejemplo               |
-|-------------|---------|------------------------------------------------------|-----------------------|
-| `category`  | string  | Filtra por categoría (insensible a mayúsculas)       | `?category=limpieza`  |
-| `available` | boolean | Filtra por disponibilidad (`true` / `false`)         | `?available=true`     |
-| `page`      | number  | Número de página (default: `1`)                      | `?page=2`             |
-| `limit`     | number  | Resultados por página, máx. 100 (default: `10`)      | `?limit=5`            |
-| `sortBy`    | string  | Campo por el que ordenar (default: `createdAt`)      | `?sortBy=price`       |
-| `order`     | string  | Dirección: `asc` o `desc` (default: `asc`)           | `?order=desc`         |
-
-**Respuesta:**
-```json
-{
-  "data": [ { "_id": "...", "name": "Limpieza del hogar", "price": 3500 } ],
-  "pagination": { "total": 12, "page": 1, "limit": 5, "totalPages": 3, "hasPrevPage": false, "hasNextPage": true }
-}
-```
-
-#### Body para `POST /api/services`
-
-```json
-{
-  "name": "Limpieza del hogar",
-  "description": "Limpieza completa del hogar",
-  "duration": 120,
-  "price": 5000,
-  "category": "limpieza",
-  "available": true
-}
-```
-
-> `PUT` acepta cualquier subconjunto de los campos; `POST` los requiere todos.
 
 ---
 
@@ -383,39 +225,74 @@ Al agregar un servicio a una reserva (`POST /api/bookings/:bid/services/:sid`), 
 | `POST`   | `/api/bookings`                     | Crear una reserva                  |
 | `PUT`    | `/api/bookings/:bid`                | Actualizar una reserva             |
 | `DELETE` | `/api/bookings/:bid`                | Eliminar una reserva               |
-| `POST`   | `/api/bookings/:bid/services/:sid`  | Agregar un servicio a la reserva   |
+| `POST`   | `/api/bookings/:bid/services/:sid`  | Agregar servicio a la reserva      |
 
-#### Body para `POST /api/bookings`
+#### Body `POST /api/bookings`
 
 ```json
 {
   "clientName": "Juan Pérez",
-  "clientEmail": "juan@mail.com",
-  "date": "2026-07-15T10:00:00"
+  "clientEmail": "juan@example.com",
+  "date": "2026-07-20T14:00:00"
 }
 ```
 
-#### Body para `POST /api/bookings/:bid/services/:sid`
+#### Body `POST /api/bookings/:bid/services/:sid`
 
 ```json
-{ "quantity": 2 }
+{
+  "quantity": 2
+}
 ```
 
-> `quantity` es opcional; si no se envía, el valor por defecto es `1`. Si el servicio ya existe en la reserva, se incrementa su cantidad.
+> - `quantity` es opcional (default: `1`)
+> - Si el servicio ya existe en la reserva, se incrementa su cantidad en lugar de duplicarlo
+
+---
+
+### Messages — `/api/messages`
+
+*Requiere `MONGO_URI` configurado. Retorna `503` si MongoDB no está disponible.*
+
+| Método   | Ruta                         | Descripción                       |
+|----------|------------------------------|-----------------------------------|
+| `GET`    | `/api/messages`              | Listar todos los mensajes         |
+| `GET`    | `/api/messages/:mid`         | Obtener mensaje por ID            |
+| `GET`    | `/api/messages/booking/:bid` | Mensajes de una reserva específica|
+| `POST`   | `/api/messages`              | Crear un mensaje                  |
+| `DELETE` | `/api/messages/:mid`         | Eliminar un mensaje               |
 
 ---
 
 ## Validaciones con Zod
 
-Las validaciones se aplican como middlewares en la capa de rutas antes de llegar al controller. Si los datos no son válidos, se devuelve `400`.
+Las validaciones se aplican como middlewares en las rutas antes de llegar al controller. Los datos inválidos retornan `400`.
 
-**Ejemplo de respuesta de error:**
+### Ejemplo de respuesta de error:
+
 ```json
 {
   "error": "Datos inválidos.",
-  "details": "price: price debe ser mayor a 0 | available: available debe ser true o false (booleano)."
+  "details": "price: debe ser mayor a 0 | available: debe ser true o false"
 }
 ```
 
-#   a h o r a s o m o s 3 - b a c k  
- 
+---
+
+## Características principales
+
+✅ **CRUD completo** de servicios y reservas  
+✅ **Filtros avanzados** en servicios (categoría, disponibilidad)  
+✅ **Paginación y ordenamiento** configurables  
+✅ **Validación robusta** con Zod  
+✅ **Relaciones con populate** entre servicios, reservas y mensajes  
+✅ **Manejo centralizado de errores**  
+✅ **Socket.io** para comunicación en tiempo real  
+✅ **Vistas con Handlebars** para interfaz web  
+✅ **Arquitectura en capas** desacoplada y escalable  
+
+---
+
+## Licencia
+
+MIT
