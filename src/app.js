@@ -1,16 +1,24 @@
 import express from 'express';
+import cors from 'cors';
 import { engine } from 'express-handlebars';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import servicesRouter from './routes/services.router.js';
 import bookingsRouter from './routes/bookings.router.js';
 import messagesRouter from './routes/messages.router.js';
+import usersRouter from './routes/users.router.js';
 import viewsRouter from './routes/views.router.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+}));
 
 // ── Handlebars ──────────────────────────────────────────────────────────────
 app.engine(
@@ -55,6 +63,7 @@ app.get('/', (_req, res) => {
 app.use('/api/services', servicesRouter);
 app.use('/api/bookings', bookingsRouter);
 app.use('/api/messages', messagesRouter);
+app.use('/api/users', usersRouter);
 app.use('/views', viewsRouter);
 
 // Respuesta estándar para rutas no definidas
