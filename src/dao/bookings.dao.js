@@ -1,54 +1,59 @@
-import { randomUUID } from 'node:crypto';
-import { createJsonStore } from './json.store.js';
-
-const { readData, writeData } = createJsonStore('bookings.json');
+import { BookingModel } from '../models/Booking.model.js';
 
 export class BookingDAO {
     async findAll() {
-        return readData();
+        return BookingModel.find().populate('services.service').lean();
     }
 
     async findById(id) {
-        const docs = await readData();
-        return docs.find(d => d._id === id) ?? null;
+        return BookingModel.findById(id).populate('services.service').lean();
     }
 
     async create(data) {
-        const docs = await readData();
-        const now = new Date().toISOString();
-        const newDoc = { _id: randomUUID(), ...data, services: data.services ?? [], createdAt: now, updatedAt: now };
-        docs.push(newDoc);
-        await writeData(docs);
-        return newDoc;
+        const doc = new BookingModel(data);
+        const saved = await doc.save();
+        return saved.populate('services.service');
     }
 
     async updateById(id, data) {
-        const docs = await readData();
-        const idx = docs.findIndex(d => d._id === id);
-        if (idx === -1) return null;
-        docs[idx] = { ...docs[idx], ...data, updatedAt: new Date().toISOString() };
-        await writeData(docs);
-        return docs[idx];
+        return BookingModel.findByIdAndUpdate(id, data, { new: true, runValidators: true })
+            .populate('services.service')
+            .lean();
     }
 
     async deleteById(id) {
-        const docs = await readData();
-        const idx = docs.findIndex(d => d._id === id);
-        if (idx === -1) return null;
-        const [deleted] = docs.splice(idx, 1);
-        await writeData(docs);
-        return deleted;
+        return BookingModel.findByIdAndDelete(id).lean();
     }
 
-    // Agrega un servicio a una reserva (sin lógica de negocio — la lógica de quantity va en el service)
     async addService(bookingId, serviceId, quantity = 1) {
-        const docs = await readData();
-        const booking = docs.find(d => d._id === bookingId);
-        if (!booking) return null;
-        if (!booking.services) booking.services = [];
-        booking.services.push({ service: serviceId, quantity });
-        booking.updatedAt = new Date().toISOString();
-        await writeData(docs);
-        return booking;
+        return BookingModel.findByIdAndUpdate(
+            bookingId,
+            { $push: { services: { service: serviceId, quantity } } },
+            { new: true }
+        ).populate('services.service').lean();
+    }
+
+    async updateServiceQuantity(bookingId, serviceId, quantity) {
+        return BookingModel.findOneAndUpdate(
+            { _id: bookingId, 'services.service': serviceId },
+            { $set: { 'services.$.quantity': quantity } },
+            { new: true }
+        ).populate('services.service').lean();
+    }
+
+    async removeService(bookingId, serviceId) {
+        return BookingModel.findByIdAndUpdate(
+            bookingId,
+            { $pull: { services: { service: serviceId } } },
+            { new: true }
+        ).populate('services.service').lean();
+    }
+
+    async clearServices(bookingId) {
+        return BookingModel.findByIdAndUpdate(
+            bookingId,
+            { $set: { services: [] } },
+            { new: true }
+        ).lean();
     }
 }

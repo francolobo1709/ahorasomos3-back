@@ -1,8 +1,8 @@
 ﻿# CleanMatch - API de Servicios y Reservas
 
-Sistema Backend de Turnos y Reservas. API REST construida con **Node.js + Express** con persistencia en archivos JSON y arquitectura en capas.
+Sistema Backend de Turnos y Reservas. API REST construida con **Node.js + Express**, persistencia en **MongoDB Atlas** con Mongoose y arquitectura en capas.
 
-> **Entrega** — "Consultas avanzadas, validación y relaciones con populate". Refactor con arquitectura en capas: routes → controllers → services → repositories → DAO → JSON files.
+> **Entrega Final** — CRUD completo de servicios y reservas, relaciones con populate, filtros, paginación, ordenamiento, validaciones con Zod, vistas con Handlebars y comunicación en tiempo real con Socket.io.
 
 ## Requisitos
 
@@ -29,7 +29,7 @@ cp .env.example .env
 |-------------|-----------------------------------|-----------|---------------------------------|
 | `PORT`      | Puerto del servidor               | ✅        | `8080`                          |
 | `NODE_ENV`  | Entorno de ejecución              | ✅        | `development`                   |
-| `MONGO_URI` | URI de conexión a MongoDB Atlas   | Solo para `/api/messages` | `mongodb+srv://...` |
+| `MONGO_URI` | URI de conexión a MongoDB Atlas   | ✅ | `mongodb+srv://...` |
 
 ## Ejecución
 
@@ -68,7 +68,7 @@ src/
 │   ├── env.config.js       → Variables de entorno (PORT, NODE_ENV, MONGO_URI)
 │   └── socket.js           → Configuración de Socket.io
 ├── database/
-│   └── connection.js       → Conexión a MongoDB (usada solo por /api/messages)
+│   └── connection.js       → Conexión a MongoDB Atlas (todos los módulos)
 ├── controllers/
 │   ├── services.controller.js
 │   ├── bookings.controller.js
@@ -83,12 +83,9 @@ src/
 │   ├── bookings.repository.js
 │   └── message.repository.js
 ├── dao/
-│   ├── services.dao.js     → Lee/escribe src/data/services.json
-│   ├── bookings.dao.js     → Lee/escribe src/data/bookings.json
-│   └── message.dao.js      → Opera contra MongoDB (Mongoose)
-├── data/
-│   ├── services.json       → Persistencia de servicios
-│   └── bookings.json       → Persistencia de reservas
+│   ├── services.dao.js     → Opera contra MongoDB (ServiceModel)
+│   ├── bookings.dao.js     → Opera contra MongoDB (BookingModel)
+│   └── message.dao.js      → Opera contra MongoDB (MessageModel)
 ├── routes/
 │   ├── services.router.js
 │   ├── bookings.router.js
@@ -103,9 +100,9 @@ src/
 │   ├── service.validators.js
 │   └── booking.validators.js
 ├── models/
-│   ├── Service.model.js    → Mongoose schema (referencia futura)
-│   ├── Booking.model.js    → Mongoose schema (referencia futura)
-│   └── message.model.js    → Mongoose schema (activo para /api/messages)
+│   ├── Service.model.js    → Mongoose schema para servicios
+│   ├── Booking.model.js    → Mongoose schema para reservas (ref a Service)
+│   └── message.model.js    → Mongoose schema para mensajes (ref a Booking)
 └── errors/
     └── AppError.js         → AppError, ValidationError, NotFoundError
 ```
@@ -119,7 +116,7 @@ Request
               └─→ Controller   → lee req, llama service, responde con res
                     └─→ Service      → reglas de negocio (sin req/res)
                           └─→ Repository   → acceso a datos, sin lógica
-                                └─→ DAO         → lee/escribe JSON (o MongoDB para messages)
+                                └─→ DAO         → accede a MongoDB vía Mongoose
 ```
 
 ### Responsabilidades por capa
@@ -130,7 +127,7 @@ Request
 | **Controller** | Lee `req`, llama al service y responde con `res`. Sin lógica de negocio.       |
 | **Service**    | Concentra las reglas de negocio. No conoce `req`, `res` ni la fuente de datos. |
 | **Repository** | Ofrece métodos de acceso a datos, valida IDs y lanza errores tipados.          |
-| **DAO**        | Única capa que accede directamente a la fuente de datos (JSON o MongoDB).      |
+| **DAO**        | Única capa que accede directamente a MongoDB vía Mongoose.                     |
 
 ### Regla de negocio clave — bookings
 

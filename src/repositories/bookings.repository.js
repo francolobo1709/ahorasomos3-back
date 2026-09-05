@@ -41,4 +41,27 @@ export const bookingRepository = {
         if (!updated) throw new NotFoundError(bookingId, 'Reserva');
         return updated;
     },
+
+    async updateServiceQuantity(bookingId, serviceId, quantity) {
+        assertValidId(bookingId);
+        assertValidId(serviceId);
+        const updated = await dao.updateServiceQuantity(bookingId, serviceId, quantity);
+        if (!updated) throw new NotFoundError(bookingId, 'Reserva');
+        return updated;
+    },
+
+    async removeService(bookingId, serviceId) {
+        assertValidId(bookingId);
+        assertValidId(serviceId);
+        const updated = await dao.removeService(bookingId, serviceId);
+        if (!updated) throw new NotFoundError(bookingId, 'Reserva');
+        return updated;
+    },
+
+    async clearServices(bookingId) {
+        assertValidId(bookingId);
+        const updated = await dao.clearServices(bookingId);
+        if (!updated) throw new NotFoundError(bookingId, 'Reserva');
+        return updated;
+    },
 };

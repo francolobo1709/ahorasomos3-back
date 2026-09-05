@@ -5,23 +5,16 @@ import { createBookingSchema, addServiceToBookingSchema } from '../validators/bo
 
 const router = Router();
 
-// GET /api/bookings
 router.get('/',       bookingsController.getBookings);
-
-// GET /api/bookings/:bid
 router.get('/:bid',   bookingsController.getBookingById);
-
-// POST /api/bookings
 router.post('/',      validate(createBookingSchema), bookingsController.createBooking);
-
-// PUT /api/bookings/:bid
 router.put('/:bid',   bookingsController.updateBooking);
-
-// DELETE /api/bookings/:bid
 router.delete('/:bid', bookingsController.deleteBooking);
 
-// POST /api/bookings/:bid/services/:sid
-router.post('/:bid/services/:sid', validate(addServiceToBookingSchema), bookingsController.addServiceToBooking);
+// Gestión de servicios dentro de una reserva
+router.post('/:bid/services/:sid',   validate(addServiceToBookingSchema), bookingsController.addServiceToBooking);
+router.delete('/:bid/services/:sid', bookingsController.removeServiceFromBooking);
+router.delete('/:bid/services',      bookingsController.clearBookingServices);
 
 export default router;
 

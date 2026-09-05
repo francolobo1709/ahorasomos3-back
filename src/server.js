@@ -4,11 +4,6 @@ import { config } from './config/env.config.js';
 import { connectDB } from './database/connection.js';
 import { initSocket } from './config/socket.js';
 
-// Conexión a MongoDB (necesaria para /api/messages)
-connectDB().catch((err) => {
-    console.warn(`⚠️  MongoDB no disponible: ${err.message}. /api/messages no funcionará.`);
-});
-
 const httpServer = createServer(app);
 const io = initSocket(httpServer);
 
@@ -19,7 +14,14 @@ io.on('connection', (socket) => {
     });
 });
 
-httpServer.listen(config.port, () => {
-    console.log(`🚀 CleanMatch corriendo en modo: ${config.env}`);
-    console.log(`📡 Servidor escuchando en http://localhost:${config.port}`);
-});
+connectDB()
+    .then(() => {
+        httpServer.listen(config.port, () => {
+            console.log(`🚀 CleanMatch corriendo en modo: ${config.env}`);
+            console.log(`📡 Servidor escuchando en http://localhost:${config.port}`);
+        });
+    })
+    .catch((err) => {
+        console.error(`❌ No se pudo conectar a MongoDB: ${err.message}`);
+        process.exit(1);
+    });

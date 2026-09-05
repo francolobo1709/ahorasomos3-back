@@ -3,8 +3,8 @@ import { bookingService } from '../services/bookings.service.js';
 
 export const renderServices = async (req, res, next) => {
     try {
-        const services = await serviceService.getAll();
-        res.render('services', { services });
+        const result = await serviceService.getAll({});
+        res.render('services', { services: result.data ?? [] });
     } catch (err) {
         next(err);
     }
@@ -13,7 +13,7 @@ export const renderServices = async (req, res, next) => {
 export const renderAvailability = async (req, res, next) => {
     try {
         const bookings = await bookingService.getAll();
-        res.render('availability', { bookings });
+        res.render('availability', { bookings: Array.isArray(bookings) ? bookings : [] });
     } catch (err) {
         next(err);
     }
